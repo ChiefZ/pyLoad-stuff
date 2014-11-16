@@ -15,14 +15,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
+import os
+import string
 
 from module.plugins.Hook import Hook
+from module.utils import save_join
 
 
 class FileBot(Hook):
     __name__ = "FileBot"
-    __version__ = "0.11"
+    __version__ = "0.13"
     __config__ = [("activated", "bool", "Activated", "False"),
+
 
                   ("destination", "folder", "destination folder", ""),
 
@@ -75,19 +79,33 @@ class FileBot(Hook):
 
                   ("exec", "str", "additional exec script", ""),
 
-                  ("storeReport", """y;n""", "save reports to local filesystem", "n")]
+                  ("storeReport", """y;n""", "save reports to local filesystem", "n"),
+                  
+                  ("extensions","list","comma-separated file extensions to process, that are not archives ","mkv,mp4,ts,avi,wmv,mpeg")]
 
     __description__ = "automated renaming and sorting for tv episodes movies, music and animes"
     __author_name__ = ("Branko Wilhelm", "Kotaro", "Gutz-Pilz")
     __author_mail__ = ("branko.wilhelm@gmail.com", "screver@gmail.com", "unwichtig@gmail.com")
 
-    event_list = ["unrarFinished", "archive_extracted"]
+    
+    event_list = ["downloadFinished","archive_extracted","unrarFinished"]
 
     def archive_extracted(self, pyfile, folder, fname, extracted_files):
         self.Finished(folder)
 
     def unrarFinished(self, folder, fname):
-        self.Finished(folder)
+        self.Finished(folder,"unrarFinished")
+        
+      
+    def downloadFinished(self, pyfile):
+        filename =  os.path.splitext(pyfile.name)
+        extensions = string.split(self.getConf("extensions"), ',')
+        
+        if filename[1].replace('.','') in extensions:
+            package = pyfile.package()
+            folder  = save_join(self.config['general']['download_folder'], package.folder)
+            self.Finished(folder)
+
 
     def Finished(self, folder):
         args = []  # http://www.filebot.net/forums/viewtopic.php?f=4&t=215&p=1561
