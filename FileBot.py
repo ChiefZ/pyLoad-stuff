@@ -24,11 +24,15 @@ from module.utils import save_join
 
 class FileBot(Hook):
     __name__ = "FileBot"
-    __version__ = "0.13"
+    __version__ = "0.14"
     __config__ = [("activated", "bool", "Activated", "False"),
 
 
                   ("destination", "folder", "destination folder", ""),
+  
+                  ("logfile", "str", "log file path", ""),
+   
+                  ("loglevel", """off;warning;info;config;all""", "log level", "info"),
 
                   ("conflict", """skip;override""", "conflict handling", "override"),
 
@@ -81,6 +85,8 @@ class FileBot(Hook):
 
                   ("storeReport", """y;n""", "save reports to local filesystem", "n"),
                   
+                  ("historyfile", "str", "rename history file", ""),
+
                   ("extensions","list","comma-separated file extensions to process, that are not archives ","mkv,mp4,ts,avi,wmv,mpeg")]
 
     __description__ = "automated renaming and sorting for tv episodes movies, music and animes"
@@ -122,8 +128,11 @@ class FileBot(Hook):
 
         args.append('-non-strict')
 
+        args.append('--log')
+        args.append(self.getConfig('loglevel'))
+
         args.append('--log-file')
-        args.append('amc.log')
+        args.append(self.getConfig('logfile'))
 
         args.append('-r')
 
@@ -217,8 +226,26 @@ class FileBot(Hook):
         args.append(folder)
 
         try:
-            subprocess.Popen(args, bufsize=-1)
+            p = subprocess.Popen(args, bufsize=-1)
             self.logInfo('executed')
             self.logDebug(' '.join(args))
+            p.wait()
+        except Exception, e:
+            self.logError(str(e))
+
+        try:
+            if self.getConfig('historyfile'):
+                self.logInfo('generating history file')
+                fb = ''
+                if self.getConfig('filebot'):
+                    fb = self.getConfig('filebot')
+                else:
+                    fb = 'filebot'
+                
+                historyargs = fb + ' -script fn:history > "' + self.getConfig('historyfile') + '"'
+                self.logDebug(historyargs)
+                p = subprocess.Popen(historyargs, bufsize=-1, shell=True)
+                
+                p.wait()
         except Exception, e:
             self.logError(str(e))
