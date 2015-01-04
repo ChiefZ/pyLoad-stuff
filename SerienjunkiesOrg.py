@@ -13,10 +13,10 @@ from module.unescape import unescape
 
 class SerienjunkiesOrg(Crypter):
     __name__ = "SerienjunkiesOrg"
-    __type__ = "crypter"
+    __type__ = "container"
     __version__ = "0.39"
 
-    __pattern__ = r'http://(?:www\.)?(serienjunkies.org|dokujunkies.org)/.*?'
+    __pattern__ = r'http://.*?(serienjunkies.org|dokujunkies.org)/.*?'
     __config__ = [("changeNameSJ", "Packagename;Show;Season;Format;Episode", "Take SJ.org name", "Show"),
                   ("changeNameDJ", "Packagename;Show;Format;Episode", "Take DJ.org name", "Show"),
                   ("randomPreferred", "bool", "Randomize Preferred-List", False),
@@ -271,7 +271,7 @@ class SerienjunkiesOrg(Crypter):
         oldStyleLink = re.compile("^http://serienjunkies.org/safe/(.*)$")
         categoryPatternDJ = re.compile("^http://dokujunkies.org/.*?(.*)$")
         showPatternDJ = re.compile(r"^http://dokujunkies.org/.*?/(.*)\.html(#hasName)?$")
-        framePattern = re.compile("^http://download.(serienjunkies.org|dokujunkies.org)/frame/go-.*?/$")
+        framePattern = re.compile("^http://download.(serienjunkies|dokujunkies)\.org/frame/go-.*?/$")
         url = pyfile.url
         if framePattern.match(url):
             self.packages.append((pyfile.package().name, [self.handleFrame(url)], pyfile.package().name))
