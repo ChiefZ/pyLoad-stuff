@@ -14,17 +14,16 @@ from module.unescape import unescape
 class SerienjunkiesOrg(Crypter):
     __name__ = "SerienjunkiesOrg"
     __type__ = "container"
-    __version__ = "0.39"
+    __version__ = "0.41"
 
     __pattern__ = r'http://.*?(serienjunkies.org|dokujunkies.org)/.*?'
     __config__ = [("changeNameSJ", "Packagename;Show;Season;Format;Episode", "Take SJ.org name", "Show"),
                   ("changeNameDJ", "Packagename;Show;Format;Episode", "Take DJ.org name", "Show"),
                   ("randomPreferred", "bool", "Randomize Preferred-List", False),
-                  ("hosterListMode", "OnlyOne;OnlyPreferred(One);OnlyPreferred(All);All",
-                   "Use for hosters (if supported)", "All"),
-                  ("hosterList", "str", "Preferred Hoster list (comma separated)",
-                   "RapidshareCom,UploadedTo,NetloadIn,FilefactoryCom,FreakshareNet,FilebaseTo,HotfileCom,DepositfilesCom,EasyshareCom,KickloadCom"),
-                  ("ignoreList", "str", "Ignored Hoster list (comma separated)", "MegauploadCom")]
+                  ("hosterListMode", "OnlyOne;OnlyPreferred(One);OnlyPreferred(All);All","Use for hosters (if supported)", "OnlyPreferred(One)"),
+                  ("hosterList", "str", "Preferred Hoster list (comma separated)", "UploadedTo,NetloadIn,ShareonlineBiz"),
+                  ("ignoreList", "str", "Ignored Hoster list (comma separated)", "MegauploadCom"),
+                  ("episodefilter", "str", "Filter for episodes when adding seasons (regex)", ".*720p.*")]
 
     __description__ = """Serienjunkies.org decrypter plugin"""
     __author_name__ = ("mkaay", "godofdream")
@@ -70,6 +69,8 @@ class SerienjunkiesOrg(Crypter):
         soup = BeautifulSoup(src)
         post = soup.find("div", attrs={"class": "post-content"})
         ps = post.findAll("p")
+        if self.getConfig("episodefilter").strip():
+            episodeRegex = re.compile(self.getConfig("episodefilter").strip())
 
         seasonName = unescape(soup.find("a", attrs={"rel": "bookmark"}).string).replace("&#8211;", "-")
         groups = {}
@@ -107,7 +108,14 @@ class SerienjunkiesOrg(Crypter):
                             groups[gid]['ep'][ename][hostername] = []
                             links = re.findall('href="(.*?)"', part)
                             for link in links:
-                                groups[gid]['ep'][ename][hostername].append(link + "#hasName")
+                                if episodeRegex:
+                                    if episodeRegex.search(ename) != None:
+                                        self.core.log.debug("[ACCEPT] checking " + ename + " for " + self.getConfig("episodefilter").strip())
+                                        groups[gid]['ep'][ename][hostername].append(link + "#hasName")
+                                    else:
+                                        self.core.log.debug("[REJECT] checking " + ename + " for " + self.getConfig("episodefilter").strip())
+                                else:
+                                    groups[gid]['ep'][ename][hostername].append(link + "#hasName")
 
         links = []
         for g in groups.values():
